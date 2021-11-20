@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
-from torchvision.models import vgg19
+import torch.nn.functional as F
+from torchvision import models
 
 
 class FeatureExtractor(nn.Module):
@@ -89,3 +90,36 @@ class GeneratorRRDB(nn.Module):
         out = self.upsampling(out)
         out = self.conv3(out)
         return out
+
+
+class ContentLoss(nn.Module):
+    """Constructs a content loss function based on the VGG19 network.
+    Using high-level feature mapping layers from the latter layers will focus more on the texture content of the image.
+    Paper reference list:
+        -`Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network <https://arxiv.org/pdf/1609.04802.pdf>` paper.
+        -`ESRGAN: Enhanced Super-Resolution Generative Adversarial Networks                    <https://arxiv.org/pdf/1809.00219.pdf>` paper.
+        -`Perceptual Extreme Super Resolution Network with Receptive Field Block               <https://arxiv.org/pdf/2005.12597.pdf>` paper.
+    """
+
+    def __init__(self) -> None:
+        super(ContentLoss, self).__init__()
+        # Load the VGG19 model trained on the ImageNet dataset.
+        vgg19 = models.vgg19(pretrained=True, num_classes=1000).eval()
+        # Extract the output of the thirty-fifth layer in the VGG19 model as the content loss.
+        self.feature_extractor = nn.Sequential(*list(vgg19.features.children())[:35])
+        # Freeze model parameters.
+        for parameters in self.feature_extractor.parameters():
+            parameters.requires_grad = False
+
+        # The preprocessing method of the input data. This is the preprocessing method of the VGG model on the ImageNet dataset.
+        self.register_buffer("mean", torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1))
+        self.register_buffer("std", torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1))
+
+    def forward(self, sr: torch.Tensor, hr: torch.Tensor) -> torch.Tensor:
+        # Standardized operations.
+        sr = (sr - self.mean) / self.std
+        hr = (hr - self.mean) / self.std
+        # Find the feature map difference between the two images.
+        loss = F.l1_loss(self.feature_extractor(sr), self.feature_extractor(hr))
+
+        return loss

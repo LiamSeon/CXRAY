@@ -32,7 +32,7 @@ def random_generate_gaussian_noise(img, sigma_range=(0, 10), gray_prob=0):
 
 def random_add_gaussian_noise(img, sigma_range=(0, 1.0), gray_prob=0, clip = False, rounds = False):
     noise = random_generate_gaussian_noise(img, sigma_range, gray_prob)
-    out = img + noise
+    out = img + torch.tensor(noise)
     if clip and rounds:
         out = np.clip((out * 255.0).round(), 0, 255) / 255.
     elif clip:
@@ -50,7 +50,7 @@ def generate_poisson_noise(img, scale=1.0, gray_noise=False):
     vals = len(np.unique(img))
     vals = 2**np.ceil(np.log2(vals))
     out = np.float32(np.random.poisson(img * vals) / float(vals))
-    noise = out - img
+    noise = torch.tensor(out) - img
     if gray_noise:
         noise = np.repeat(noise[:, :, np.newaxis], 3, axis=2)
     return noise * scale
@@ -66,7 +66,7 @@ def random_generate_poisson_noise(img, scale_range=(0, 1.0), gray_prob=0):
 
 def random_add_poisson_noise(img, scale_range=(0, 1.0), gray_prob=0, clip = False, rounds=False):
     noise = random_generate_poisson_noise(img, scale_range, gray_prob)
-    out = img + noise
+    out = img + torch.tensor(noise)
     if clip and rounds:
         out = np.clip((out * 255.0).round(), 0, 255) / 255.
     elif clip:
@@ -150,6 +150,6 @@ def sinc_filter(img):
     kernel_size = random.choice(kernel_range)
     omega_c = np.random.uniform(np.pi / 3, np.pi)
     sinc_kernel = torch.tensor(circular_lowpass_kernel(omega_c, kernel_size, pad_to=21))
-    simg = filter2D(torch.tensor(img).unsqueeze(0), sinc_kernel)
+    simg = filter2D(torch.tensor(img).unsqueeze(0), sinc_kernel.float())
 
     return simg
