@@ -28,34 +28,15 @@ for e in range(epoch):
     for lr, hr in dataloader:
         lr = lr.to(device)
         hr = hr.to(device)
-        # Initialize the gradient of the generator model.
         generator.zero_grad()
-        # Generate super-resolution images.
         sr = generator(lr)
-        # Calculate the difference between the super-resolution image and the high-resolution image at the pixel level.
         pixel_loss = pixel_criterion(sr, hr)
-        # Update the weights of the generator model.
         pixel_loss.backward()
         p_optimizer.step()
         if step <= 400:
             p_scheduler.step()
         step += 1
 
-        if step % 1000 == 20:
-
-            print('\n\n')
-            print(e, 'lr')
-            plt.figure(figsize = (40,16))
-            plt.imshow(lr[0][0].detach().cpu(), cmap = 'gray')
-            plt.savefig(os.path.join(png_path, 'lr.png'))
-            plt.figure(figsize = (40,16))
-            print(e, 'hr')
-            plt.imshow(hr[0][0].detach().cpu(), cmap = 'gray')
-            plt.savefig(os.path.join(png_path, 'hr.png'))
-            print(e, 'sr')
-            plt.figure(figsize = (40,16))
-            plt.imshow(sr[0][0].detach().cpu(), cmap = 'gray')
-            plt.savefig(os.path.join(png_path, 'sr.png'))
 
     torch.save(generator.state_dict(), os.path.join(save_path, 'epoch'+str(e)+'_first_stage_generator.pth'))
         

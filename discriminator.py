@@ -4,7 +4,6 @@ from torch.nn.utils import spectral_norm
 
 
 class UNetDiscriminatorSN(nn.Module):
-    """Defines a U-Net discriminator with spectral normalization (SN)"""
 
     def __init__(self, num_in_ch, num_feat=64, skip_connection=True):
         super(UNetDiscriminatorSN, self).__init__()
@@ -56,3 +55,4 @@ class UNetDiscriminatorSN(nn.Module):
         out = self.conv9(out)
 
         return out
+        
